@@ -26,4 +26,7 @@ modded_save_backup/
 
 ## Python cache
 __pycache__/
+
+## AGENTS
 .claude/
+AGENTS.md
