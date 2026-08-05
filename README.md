@@ -10,9 +10,17 @@ By default, Slay the Spire 2 can separate normal saves and modded saves into dif
 
 ## Current Status
 
-This fork has an initial migration for Slay the Spire 2 beta `v0.108.0`.
+This fork was migrated for Slay the Spire 2 beta `v0.108.0` and verified against `v0.110.1`.
 
-The project builds against the current beta game assemblies, but the save-path behavior still needs in-game verification before release.
+`v1.0.2` fixes the *"Assembly DLL for mod UnifiedSavePath failed to initialize!"* error reported on
+other players' installs. Despite the wording, that message does not mean the DLL failed to load: the
+game shows it whenever a mod's initializer throws. `v1.0.1` called Harmony's `PatchAll`, which is
+all-or-nothing — on a game build where any one patch target was missing or renamed, it threw and
+took down the four patches that would have worked. The mod was then marked failed while the game
+still counted itself as modded, so saves silently split.
+
+`v1.0.2` resolves each target by name at runtime and applies patches one at a time, logging and
+skipping anything the current build does not have, and never lets the initializer throw.
 
 ## How It Works
 
@@ -24,6 +32,26 @@ It currently:
 - Patches the `IsRunningModded` getter and setter.
 - Patches `GetProfileDir` so modded and unmodded runs resolve to the same `profile{id}` directory.
 - Forces beta `forceModState` save path calls back to the unmodded path.
+
+Every patch is optional. On a game build that is missing one, the mod applies the rest and writes a
+line such as `[UnifiedSavePath] Skipping GetAccountDir(bool?): not present in this game build.` to
+the game log.
+
+## Troubleshooting
+
+All messages from the mod are prefixed with `[UnifiedSavePath]` in the game log. On a successful
+start you should see `Applied 5 of 5 patches.`
+
+If the mod reports an error:
+
+- **`There are two or more mods with the same id UnifiedSavePath`** — the mod is installed twice.
+  Mod discovery scans every `.json` under `mods/` recursively, so a nested extra copy counts.
+- **A declared min game version higher than yours** — the manifest requires game `0.108.0` or newer.
+- **`failed to initialize`** — the log line right before it names the cause; please include it when
+  reporting.
+
+This mod does not migrate existing files. It only changes where the game reads and writes, so saves
+already written to a `modded/` directory need to be moved by hand.
 
 ## Repository Layout
 
@@ -43,11 +71,9 @@ The project targets .NET 9.0 and references assemblies from the local Slay the S
 dotnet build UnifiedSavePath/UnifiedSavePath.csproj -c Release -p:STS2GameDir="E:/My Games/steamapps/common/Slay the Spire 2"
 ```
 
-Adjust `STS2GameDir` if your game is installed elsewhere.
-
-## Migration Notes
-
-The next step is to install the built DLL/JSON pair into the game's `mods` directory and verify that vanilla and modded profiles read and write the same save files.
+Adjust `STS2GameDir` if your game is installed elsewhere. Install the resulting `UnifiedSavePath.dll`
+and `UnifiedSavePath.json` pair from `bin/Release/net9.0/` into the game's `mods` directory. The DLL
+must keep its name, since the loader looks for `{manifest id}.dll`.
 
 ## Fork Source
 
