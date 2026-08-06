@@ -1,12 +1,3 @@
 {
-    "id": "UnifiedSavePath",
-    "name": "Unified Save Path",
-    "author": "JiesiLuo",
-    "description": "Unifies the save path for modded and vanilla play so all progression is shared.",
-    "version": "v1.0.2",
-    "min_game_version": "0.108.0",
-    "has_pck": false,
-    "has_dll": true,
-    "dependencies": [],
-    "affects_gameplay": false
+    "_comment": "Tombstone. Not a mod manifest. v1.0.1 shipped this Workshop item as UnifiedSavePath.dll + UnifiedSavePath.json; v1.0.3 renamed the pair to UnifiedSavePathForked.*. Steam does not always delete files dropped from an item's manifest, so the old v1.0.1 manifest can linger in a subscriber's content folder and load as a second, failing save-path mod. Shipping this file keeps the name inside the manifest so Steam overwrites the leftover instead. ModManager.ReadModManifest skips any JSON without id/name/author/description/version, logging 'does not look like a mod manifest', so this registers no mod and produces no error. Do not remove it until v1.0.1 subscribers are gone - removing it recreates the residue."
 }

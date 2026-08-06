@@ -59,9 +59,23 @@ already written to a `modded/` directory need to be moved by hand.
 UnifiedSavePath/
   UnifiedSavePath.csproj
   UnifiedSavePathMod.cs
-  UnifiedSavePath.json
+  UnifiedSavePathForked.json
+  UnifiedSavePath.json      inert placeholder, see "Upgrading from v1.0.1"
   mod_manifest.json
 ```
+
+## Upgrading from v1.0.1
+
+`v1.0.1` shipped as `UnifiedSavePath.dll` + `UnifiedSavePath.json`; `v1.0.3` renamed both to
+`UnifiedSavePathForked.*`. Steam does not always delete a file that a Workshop item stops shipping,
+so the old manifest can survive the update and be loaded as a second save-path mod - which then
+fails, and a failed mod still counts as modded.
+
+The mod ships an inert `UnifiedSavePath.json` at the old name so Steam overwrites the leftover
+instead. The game skips it with `does not look like a mod manifest; skipping it.` in the log. If you
+ever see `Unified Save Path` (v1.0.1, by `JiesiLuo`) listed *alongside* `Unified Save Path Forked`,
+delete `UnifiedSavePath.dll` and `UnifiedSavePath.json` from
+`steamapps/workshop/content/2868840/3762072145/`.
 
 ## Build
 
@@ -71,13 +85,21 @@ The project targets .NET 9.0 and references assemblies from the local Slay the S
 dotnet build UnifiedSavePath/UnifiedSavePath.csproj -c Release -p:STS2GameDir="E:/My Games/steamapps/common/Slay the Spire 2"
 ```
 
-Adjust `STS2GameDir` if your game is installed elsewhere. Install the resulting `UnifiedSavePath.dll`
-and `UnifiedSavePath.json` pair from `bin/Release/net9.0/` into the game's `mods` directory. The DLL
-must keep its name, since the loader looks for `{manifest id}.dll`.
+Adjust `STS2GameDir` if your game is installed elsewhere. Install the resulting
+`UnifiedSavePathForked.dll` and `UnifiedSavePathForked.json` pair from `bin/Release/net9.0/` into the
+game's `mods` directory. The DLL must keep its name, since the loader looks for `{manifest id}.dll`.
 
 ## Fork Source
 
-This fork is based on [`luojiesi/SLS2Mods`](https://github.com/luojiesi/SLS2Mods). The retained mod metadata lists `JiesiLuo` as the original author.
+This fork is based on [`luojiesi/SLS2Mods`](https://github.com/luojiesi/SLS2Mods), originally by
+`JiesiLuo`.
+
+It ships under the id `UnifiedSavePathForked` rather than upstream's `UnifiedSavePath` on purpose.
+The loader only de-duplicates a mod id between the local `mods/` directory and the Workshop; two
+Workshop mods sharing an id are not reconciled, so one of them fails with `MOD_ERROR.DUPLICATE_ID`.
+A failed mod still counts toward `ModManager.IsRunningModded()`, which would put the game back on the
+`modded/` save path - the exact problem this mod exists to prevent. Separate ids let a player have
+both installed without either one failing.
 
 ## License
 

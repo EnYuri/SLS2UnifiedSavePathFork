@@ -1,0 +1,11 @@
+{
+    "id": "UnifiedSavePathForked",
+    "name": "Unified Save Path Forked",
+    "author": "Nayuri",
+    "description": "Unifies the save path for modded and vanilla play so all progression is shared. Fork of Unified Save Path by JiesiLuo.",
+    "version": "v1.0.4",
+    "has_pck": false,
+    "has_dll": true,
+    "dependencies": [],
+    "affects_gameplay": false
+}

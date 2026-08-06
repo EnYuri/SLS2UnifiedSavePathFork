@@ -18,7 +18,10 @@ namespace UnifiedSavePath;
 [ModInitializer("Initialize")]
 public static class UnifiedSavePathMod
 {
-    private const string HarmonyId = "com.unifiedsavepath.sts2";
+    // Distinct from the upstream mod's "com.unifiedsavepath.sts2". Sharing it would make the
+    // HasAnyPatches guard below mistake upstream's patches for our own and skip installing ours -
+    // exactly wrong when upstream's PatchAll applied some patches and then threw.
+    private const string HarmonyId = "com.unifiedsavepathforked.sts2";
     private const string ProviderTypeName = "MegaCrit.Sts2.Core.Saves.UserDataPathProvider";
 
     private static bool _initialized;

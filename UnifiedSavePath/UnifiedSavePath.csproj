@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
+    <!-- The loader requires the assembly to be named {manifest.id}.dll. -->
+    <AssemblyName>UnifiedSavePathForked</AssemblyName>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <EnableDynamicLoading>true</EnableDynamicLoading>
@@ -9,6 +11,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Update="UnifiedSavePathForked.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <!-- Tombstone for the v1.0.1 filename; see the file's own _comment. It has to ship, so it
+         belongs in the build output alongside the real pair. -->
     <None Update="UnifiedSavePath.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
