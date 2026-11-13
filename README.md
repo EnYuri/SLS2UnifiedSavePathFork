@@ -10,7 +10,8 @@ By default, Slay the Spire 2 can separate normal saves and modded saves into dif
 
 ## Current Status
 
-This fork was migrated for Slay the Spire 2 beta `v0.108.0` and verified against `v0.110.1`.
+This fork was migrated for Slay the Spire 2 beta `v0.108.0`. Its save API was last checked
+against `v0.113.0`, where it was unchanged.
 
 `v1.0.2` fixes the *"Assembly DLL for mod UnifiedSavePath failed to initialize!"* error reported on
 other players' installs. Despite the wording, that message does not mean the DLL failed to load: the
@@ -32,6 +33,10 @@ It currently:
 - Patches the `IsRunningModded` getter and setter.
 - Patches `GetProfileDir` so modded and unmodded runs resolve to the same `profile{id}` directory.
 - Forces beta `forceModState` save path calls back to the unmodded path.
+- Skips the game's first-time copy of vanilla saves into `modded/` when both paths are already the
+  same directory. Without this, the first launch with mods copies each save file onto itself and
+  shows a popup claiming the saves were moved to a separate modded location. If the path patches
+  did not apply, the copy still runs as normal.
 
 Every patch is optional. On a game build that is missing one, the mod applies the rest and writes a
 line such as `[UnifiedSavePath] Skipping GetAccountDir(bool?): not present in this game build.` to
@@ -40,7 +45,7 @@ the game log.
 ## Troubleshooting
 
 All messages from the mod are prefixed with `[UnifiedSavePath]` in the game log. On a successful
-start you should see `Applied 5 of 5 patches.`
+start you should see `Applied 6 of 6 patches.`
 
 If the mod reports an error:
 

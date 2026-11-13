@@ -23,6 +23,8 @@ public static class UnifiedSavePathMod
     // exactly wrong when upstream's PatchAll applied some patches and then threw.
     private const string HarmonyId = "com.unifiedsavepathforked.sts2";
     private const string ProviderTypeName = "MegaCrit.Sts2.Core.Saves.UserDataPathProvider";
+    private const string ModManagerTypeName = "MegaCrit.Sts2.Core.Modding.ModManager";
+    private const int PatchCount = 6;
 
     private static bool _initialized;
 
@@ -75,8 +77,19 @@ public static class UnifiedSavePathMod
         applied += TryPatch(harmony, AccessTools.Method(provider, "GetProfileDir", new[] { typeof(int), typeof(bool?) }),
             nameof(Patches.ForceModStateOfArg1), "GetProfileDir(int, bool?)");
 
-        applied += TryPatch(harmony, AccessTools.Method(provider, "GetAccountDir", new[] { typeof(bool?) }),
-            nameof(Patches.ForceModStateOfArg0), "GetAccountDir(bool?)");
+        var accountDir = AccessTools.Method(provider, "GetAccountDir", new[] { typeof(bool?) });
+        applied += TryPatch(harmony, accountDir, nameof(Patches.ForceModStateOfArg0), "GetAccountDir(bool?)");
+
+        // The game copies vanilla saves into modded/ the first time it runs modded. With the paths
+        // above unified, every "copy" is a file onto itself, and the game then tells the player
+        // their saves were moved to a separate modded location. The prefix decides at call time,
+        // from the live path results, so a build where the path patches did not land keeps the copy.
+        Patches.AccountDir = accountDir;
+        Patches.ProfileDir = AccessTools.Method(provider, "GetProfileDir", new[] { typeof(int), typeof(bool?) });
+        var modManager = AccessTools.TypeByName(ModManagerTypeName);
+        applied += TryPatch(harmony,
+            modManager == null ? null : AccessTools.Method(modManager, "CopyUnmoddedSaveFilesIfNeeded"),
+            nameof(Patches.SkipSelfCopyOfSaves), "ModManager.CopyUnmoddedSaveFilesIfNeeded");
 
         // Belt and braces in case the getter patch was the one that failed: clear the stored state
         // too. Harmless when the getter patch did land, since nothing reads the backing field.
@@ -95,7 +108,7 @@ public static class UnifiedSavePathMod
         }
         else
         {
-            LogInfo($"Applied {applied} of 5 patches. Modded runs now use the vanilla profile directory.");
+            LogInfo($"Applied {applied} of {PatchCount} patches. Modded runs now use the vanilla profile directory.");
         }
     }
 
@@ -123,9 +136,9 @@ public static class UnifiedSavePathMod
         }
     }
 
-    private static void LogInfo(string message) => Write("Info", message);
+    internal static void LogInfo(string message) => Write("Info", message);
 
-    private static void LogError(string message) => Write("Error", message);
+    internal static void LogError(string message) => Write("Error", message);
 
     /// <summary>
     /// Writes to the game log without binding to it at compile time, so a moved logging API costs a
@@ -206,5 +219,54 @@ internal static class Patches
     internal static void ForceModStateOfArg0(ref bool? __0)
     {
         __0 = false;
+    }
+
+    /// <summary>GetAccountDir(bool?) and GetProfileDir(int, bool?), invoked through their patches.</summary>
+    internal static MethodInfo? AccountDir;
+    internal static MethodInfo? ProfileDir;
+
+    /// <summary>
+    /// ModManager.CopyUnmoddedSaveFilesIfNeeded -> skipped while the game reads the vanilla
+    /// directory. Its source and target are then the same file (or a modded/ copy nothing reads),
+    /// and it would otherwise raise the "saves were copied" popup for a copy that separated nothing.
+    ///
+    /// This is the one prefix that replaces its target outright: there is no argument to rewrite,
+    /// and the copy is the very split this mod exists to prevent. It still runs the original
+    /// whenever the paths are not unified, or the check itself fails, so it only ever suppresses a
+    /// copy nothing would read. The try/catch matters: an exception from a prefix would escape
+    /// into ModManager.Initialize.
+    /// </summary>
+    internal static bool SkipSelfCopyOfSaves()
+    {
+        try
+        {
+            if (ModdedPathsAreUnified())
+            {
+                UnifiedSavePathMod.LogInfo("Skipping the game's first-time copy of saves into modded/: both paths are already the same directory.");
+                return false;
+            }
+        }
+        catch (Exception e)
+        {
+            UnifiedSavePathMod.LogError($"Could not check save paths; letting the game copy saves: {e.Message}");
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// True when the game's normal save lookups (forceModState left null) resolve to the vanilla
+    /// directory, so a copy into modded/ is either a file onto itself or a copy nothing will read.
+    /// Called through reflection, so it sees the patched methods exactly as the game does.
+    /// </summary>
+    private static bool ModdedPathsAreUnified()
+    {
+        if (AccountDir == null || AccountDir.Invoke(null, new object?[] { null }) as string != "")
+        {
+            return false;
+        }
+
+        // Absent on builds that predate forceModState on GetProfileDir; GetAccountDir alone decides there.
+        return ProfileDir == null || ProfileDir.Invoke(null, new object?[] { 1, null }) as string == "profile1";
     }
 }
