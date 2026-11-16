@@ -10,8 +10,9 @@ By default, Slay the Spire 2 can separate normal saves and modded saves into dif
 
 ## Current Status
 
-This fork was migrated for Slay the Spire 2 beta `v0.108.0`. Its save API was last checked
-against `v0.113.0`, where it was unchanged.
+This fork was migrated for Slay the Spire 2 beta `v0.108.0`. Release `v1.0.6` was rebuilt
+against the `v0.113.1` hotfix (game commit `d09d48e5`). The save-path API and first-time
+save-copy hook remain compatible; no runtime code changes were needed for this hotfix.
 
 `v1.0.2` fixes the *"Assembly DLL for mod UnifiedSavePath failed to initialize!"* error reported on
 other players' installs. Despite the wording, that message does not mean the DLL failed to load: the
@@ -51,7 +52,8 @@ If the mod reports an error:
 
 - **`There are two or more mods with the same id UnifiedSavePath`** — the mod is installed twice.
   Mod discovery scans every `.json` under `mods/` recursively, so a nested extra copy counts.
-- **A declared min game version higher than yours** — the manifest requires game `0.108.0` or newer.
+- **A declared min game version higher than yours** — check for an older installed copy. The current
+  manifest has no minimum game version; unavailable patches are skipped individually.
 - **`failed to initialize`** — the log line right before it names the cause; please include it when
   reporting.
 
